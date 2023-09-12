@@ -2,7 +2,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated
-from courses.permissions import IsModerator, IsOwnerOrStaff
+from courses.permissions import IsModerator, IsOwner, CoursesPermissions
 
 from courses.models import Course, Lesson, Payment
 from courses.serializers import CourseSerializer, LessonSerializer, PaymentSerializer
@@ -11,7 +11,7 @@ from courses.serializers import CourseSerializer, LessonSerializer, PaymentSeria
 class CoursesViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
-    permission_classes = [IsAuthenticated, IsModerator, IsOwnerOrStaff]
+    permission_classes = [CoursesPermissions, ]
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -39,12 +39,12 @@ class LessonRetrieveAPIView(generics.RetrieveAPIView):
 class LessonUpdateAPIView(generics.UpdateAPIView):
     serializer_class = LessonSerializer
     queryset = Lesson.objects.all()
-    permission_classes = [IsOwnerOrStaff]
+    permission_classes = [IsAuthenticated, IsModerator, IsOwner]
 
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     queryset = Lesson.objects.all()
-    permission_classes = [IsOwnerOrStaff]
+    permission_classes = [IsAuthenticated, IsOwner]
 
 
 class PaymentListAPIView(generics.ListAPIView):

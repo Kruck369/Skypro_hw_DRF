@@ -12,7 +12,8 @@ class LessonSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     lesson_count = serializers.SerializerMethodField()
-    lesson = LessonSerializer(many=True)
+    lesson = LessonSerializer(many=True, read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Course
@@ -20,6 +21,11 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_lesson_count(self, obj):
         return Lesson.objects.filter(course=obj).count()
+
+    def save(self, **kwargs):
+        if self.instance is None:
+            kwargs['owner'] = self.fields['owner'].get_default()
+        return super().save(**kwargs)
 
 
 class PaymentSerializer(serializers.ModelSerializer):
