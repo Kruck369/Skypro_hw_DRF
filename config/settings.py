@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_yasg',
+    'corsheaders',
 
     'courses.apps.CoursesConfig',
     'users.apps.UsersConfig',
@@ -160,4 +162,13 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
     "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'https://read-only.example.com',
+    'https://read-and-write.example.com',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://read-and-write.example.com',
 ]

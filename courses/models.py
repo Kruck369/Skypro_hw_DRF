@@ -26,6 +26,7 @@ class Course(models.Model):
     description = models.TextField(verbose_name='описание')
     lesson = models.ManyToManyField(Lesson, verbose_name='уроки', **NULLABLE)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, **NULLABLE)
+    price = models.IntegerField(verbose_name='стоимость', **NULLABLE)
 
     def __str__(self):
         return f'{self.title}'

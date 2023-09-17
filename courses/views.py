@@ -1,9 +1,13 @@
+import os
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework import viewsets, generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+import stripe
 
 from courses.paginators import CourseAndLessonPaginator
 from courses.permissions import IsModerator, IsOwner, CoursesPermissions, IsModeratorOrIsOwner
@@ -20,6 +24,7 @@ class CoursesViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'], serializer_class=SubscriptionSerializer)
     def subscribe(self, request, pk=None):
+        stripe.api_key = os.getenv('STRIPE_API_KEY')
         course = self.get_object()
         serializer = SubscriptionSerializer(data={'user': request.user.id, 'course': course.id})
 
@@ -30,9 +35,32 @@ class CoursesViewSet(viewsets.ModelViewSet):
                 return Response({'detail': 'Пользователь уже подписан на этот курс'}, status=status.HTTP_400_BAD_REQUEST)
 
             serializer.save()
-            return Response({'detail': 'Подписка установлена успешно'}, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            product = stripe.Product.create(name=course.title)
+
+            price = stripe.Price.create(
+                unit_amount=course.price,
+                currency='rub',
+                recurring={'interval': 'month'},
+                product=product.id
+            )
+
+            try:
+                session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=[
+                        {
+                            'price': price,
+                            'quantity': 1,
+                        },
+                    ],
+                    mode='subscription',
+                    success_url='https://localhost:8000/courses/',
+                    cancel_url='https://localhost:8000/'
+                )
+                return Response({'detail': 'Ссылка на оплату', 'checkout_url': session.url}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['DELETE'])
     def unsubscribe(self, request, pk=None):
