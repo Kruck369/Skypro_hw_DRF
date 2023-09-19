@@ -1,5 +1,6 @@
 import os
 
+from django.core.mail import send_mail
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -14,6 +15,7 @@ from courses.permissions import IsModerator, IsOwner, CoursesPermissions, IsMode
 
 from courses.models import Course, Lesson, Payment, Subscription
 from courses.serializers import CourseSerializer, LessonSerializer, PaymentSerializer, SubscriptionSerializer
+from courses.tasks import send_update
 
 
 class CoursesViewSet(viewsets.ModelViewSet):
@@ -75,6 +77,14 @@ class CoursesViewSet(viewsets.ModelViewSet):
         Subscription.objects.filter(user=request.user, course=course).delete()
 
         return Response({'detail': 'Подписка успешно удалена.'}, status=status.HTTP_204_NO_CONTENT)
+
+    def perform_update(self, serializer):
+        if serializer.is_valid():
+            course = serializer.save()
+            subscribers = Subscription.objects.filter(course=course)
+            for subscriber in subscribers:
+                user_email = subscriber.user.email
+                send_update.delay(user_email, course.title)
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
