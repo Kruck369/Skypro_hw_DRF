@@ -6,6 +6,11 @@ services:
     environment:
       POSTGRES_PASSWORD: 65123891Sad@
       PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build: .
@@ -14,3 +19,13 @@ services:
       - '8000:8000'
     depends_on:
       - db
+
+  redis:
+    image: redis
+
+  celery:
+    build: .
+    command: celery -A config worker -l INFO -P eventlet
+    depends_on:
+      - db
+      - redis
